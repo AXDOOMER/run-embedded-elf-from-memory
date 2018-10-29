@@ -28,20 +28,20 @@
 int main(int argc, char * argv[], char **envp)
 {
 	int pid = getpid();
-	printf("My PID is %d.\n", pid);
-	printf("My filename is %s\n", argv[0]);
+	printf("My PID is: %d\n", pid);
+	printf("My filename is: %s\n", argv[0]);
 
 	// Loader le fichier en mémoire dans un buffer (utilise sys/stat.h)
 	struct stat st;
 	stat(argv[0], &st);
 	size_t size = st.st_size;
 
-	printf("My size is %d.\n", size);
+	printf("My size is: %d\n", size);
 
 	char procstring[32];
 	sprintf(procstring, "%s%d%s", "/proc/", pid, "/exe");
 
-	printf("Location: %s.\n", procstring);
+	printf("Location: %s\n", procstring);
 
 	int filedesc = open(procstring, O_RDONLY);
 	if (filedesc < 0)
@@ -62,7 +62,7 @@ int main(int argc, char * argv[], char **envp)
 		// The goal is to find the second ELF header
 		if (entirefile[i] == 0x7F && entirefile[i+1] == 'E' && entirefile[i+2] == 'L' && entirefile[i+3] == 'F')
 		{
-			printf("Second ELF header is at %d.\n", i);
+			printf("Second ELF header is at: %d\n", i);
 
 			// Créer un buffer pour ce deuxième ELF
 			int newsize = size - i;
@@ -79,7 +79,6 @@ int main(int argc, char * argv[], char **envp)
 			}
 
 			// It's in memory!
-
 			int memfd = syscall(SYS_memfd_create, "hidden", 0);
 
 /*			if (ftruncate(memfd, newsize) < 0)

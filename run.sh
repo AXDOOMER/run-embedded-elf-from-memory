@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Build the file to embed
-g++ -O2 hello.cpp -o hello
+gcc -O2 hello.c -o hello
 strip hello
 
 # Build the payload and embed 'hello'
-g++ main.cpp -o emb && cat hello >> emb && ./emb
+gcc main.c -o emb && cat hello >> emb && ./emb
