@@ -1,18 +1,24 @@
-// A kind of packer that runs a second ELF that's embedded in itself
-// Copyright (C) 2018  Alexandre-Xavier Labonté-Lamoureux
+// A kind of packer that executes a second (embedded) ELF
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Copyright (c) 2018  Alexandre-Xavier Labonté-Lamoureux
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
 //
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,7 +28,8 @@
 #include <fcntl.h>
 #include <errno.h>
 
-// use SYS_memfd_create, because the <sys/memfd.h> wrapper doesn't exist until Linux 4.10 or something like that
+// Use "SYS_memfd_create", because the <sys/memfd.h> wrapper doesn't exist until Linux 4.10 I think
+// The "memfd_create" system call itself was added to Linux 3.17 so "syscall" can be used to call it
 #include <sys/syscall.h>
 
 int main(int argc, char * argv[], char **envp)
@@ -31,7 +38,7 @@ int main(int argc, char * argv[], char **envp)
 	printf("My PID is: %d\n", pid);
 	printf("My filename is: %s\n", argv[0]);
 
-	// Loader le fichier en mémoire dans un buffer (utilise sys/stat.h)
+	// Find the size of the file using <sys/stat.h>
 	struct stat st;
 	stat(argv[0], &st);
 	size_t size = st.st_size;
@@ -50,7 +57,12 @@ int main(int argc, char * argv[], char **envp)
 		return 1;
 	}
 
-	// TODO: delete self using 'rm'
+	// Delete self
+	unlink(argv[0]);
+	if (access(argv[0], F_OK) < 0)
+		printf("I successfully deleted myself.\n");
+	else
+		printf("Couldn't erase myself from the filesystem.\n");
 
 	// The real business starts here
 	char *entirefile = (char*)malloc(size);
@@ -81,11 +93,6 @@ int main(int argc, char * argv[], char **envp)
 			// It's in memory!
 			int memfd = syscall(SYS_memfd_create, "hidden", 0);
 
-/*			if (ftruncate(memfd, newsize) < 0)
-			{
-				return 1;
-			}
-*/
 			if (memfd < 0)
 			{
 				printf("Invalid memfd %d.\n", i);
@@ -98,13 +105,16 @@ int main(int argc, char * argv[], char **envp)
 
 			// Execute the in-memory ELF
 			int ret = fexecve(memfd, argv, envp);
+			// The above function will only return if there's an error
 			printf("Return value: %d. Errno is: ret %d\n", ret, errno);
 
 			free(newelf);
 		}
 	}
 
-	// Free the ressources
+	printf("If you see this, no embedded ELF was found.\n");
+
+	// Free the resources
 	free(entirefile);
 	close(filedesc);
 
