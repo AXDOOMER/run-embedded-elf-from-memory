@@ -103,16 +103,22 @@ int main(int argc, char * argv[], char **envp)
 
 			write(memfd, newelf, newsize);
 
-			// Execute the in-memory ELF
-			int ret = fexecve(memfd, argv, envp);
-			// The above function will only return if there's an error
-			printf("Return value: %d. Errno is: ret %d\n", ret, errno);
+			// Deploy the payload as a different process
+			fork();
+			int newpid = getpid();
+			if (newpid != pid)
+			{
+				// Execute the in-memory ELF
+				int ret = fexecve(memfd, argv, envp);
+				// The above function will only return if there's an error
+				printf("ERROR EXECUTING PAYLOAD: Return value: %d. Errno is: ret %d\n", ret, errno);
+			}
 
 			free(newelf);
 		}
 	}
 
-	printf("If you see this, no embedded ELF was found.\n");
+	printf("The packer is done deploying the payload.\n");
 
 	// Free the resources
 	free(entirefile);
