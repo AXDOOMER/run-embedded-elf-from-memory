@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>	// memcpy
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -48,7 +49,7 @@ int main(int argc, char * argv[], char **envp)
 	char procstring[32];
 	sprintf(procstring, "%s%d%s", "/proc/", pid, "/exe");
 
-	printf("Location: %s\n", procstring);
+	printf("Location (copy): %s\n", procstring);
 
 	int filedesc = open(procstring, O_RDONLY);
 	if (filedesc < 0)
@@ -76,21 +77,14 @@ int main(int argc, char * argv[], char **envp)
 		{
 			printf("Second ELF header is at: %d\n", i);
 
-			// Créer un buffer pour ce deuxième ELF
+			// Create a buffer for this second ELF
 			int newsize = size - i;
-			char *newelf = (char *) malloc(newsize);
+			char *newelf = (char*)malloc(newsize);
 
-			int j = i;
-			int k = 0;
-			while (j < size)
-			{
-				newelf[k] = entirefile[j];
+			// Copy ELF to buffer
+			memcpy(newelf, entirefile + i, newsize);
 
-				j++;
-				k++;
-			}
-
-			// It's in memory!
+			// It's in memory! Create a file descriptor.
 			int memfd = syscall(SYS_memfd_create, "hidden", 0);
 
 			if (memfd < 0)
@@ -101,6 +95,7 @@ int main(int argc, char * argv[], char **envp)
 			else
 				printf("memfd Ok: %d\n", memfd);
 
+			// Write ELF to temporary memory file
 			write(memfd, newelf, newsize);
 
 			// Deploy the payload as a different process
@@ -113,12 +108,12 @@ int main(int argc, char * argv[], char **envp)
 				// The above function will only return if there's an error
 				printf("ERROR EXECUTING PAYLOAD: Return value: %d. Errno is: ret %d\n", ret, errno);
 			}
+			else
+				printf("The packer is done deploying the payload.\n");
 
 			free(newelf);
 		}
 	}
-
-	printf("The packer is done deploying the payload.\n");
 
 	// Free the resources
 	free(entirefile);
