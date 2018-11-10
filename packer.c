@@ -1,4 +1,4 @@
-// A kind of packer that executes a second (embedded) ELF
+// A packer that executes a second (embedded) ELF
 //
 // Copyright (c) 2018  Alexandre-Xavier Labonté-Lamoureux
 //
@@ -29,11 +29,11 @@
 #include <fcntl.h>
 #include <errno.h>
 
-// Use "SYS_memfd_create", because the <sys/memfd.h> wrapper doesn't exist until Linux 4.10 I think
-// The "memfd_create" system call itself was added to Linux 3.17 so "syscall" can be used to call it
+// Use "SYS_memfd_create", because the <sys/memfd.h> wrapper doesn't exist until Linux 4.10
+// The "memfd_create" system call was added to Linux 3.17 so "syscall" can be used to call it
 #include <sys/syscall.h>
 
-int main(int argc, char * argv[], char **envp)
+int main(int argc, char* argv[], char** envp)
 {
 	int pid = getpid();
 	printf("My PID is: %d\n", pid);
@@ -66,20 +66,20 @@ int main(int argc, char * argv[], char **envp)
 		printf("Couldn't erase myself from the filesystem.\n");
 
 	// The real business starts here
-	char *entirefile = (char*)malloc(size);
+	char* entirefile = (char*)malloc(size);
 	read(filedesc, entirefile, size);
 
 	// Yeah... use arbitrary values here.
 	for (int i = size - 10; i > 1000; i--)
 	{
 		// The goal is to find the second ELF header
-		if (entirefile[i] == 0x7F && entirefile[i+1] == 'E' && entirefile[i+2] == 'L' && entirefile[i+3] == 'F')
+		if (entirefile[i] == 0x7F && entirefile[i + 1] == 'E' && entirefile[i + 2] == 'L' && entirefile[i + 3] == 'F')
 		{
-			printf("Second ELF header is at: %d\n", i);
+			printf("Second ELF header found at: 0x%x\n", i);
 
 			// Create a buffer for this second ELF
 			int newsize = size - i;
-			char *newelf = (char*)malloc(newsize);
+			char* newelf = (char*)malloc(newsize);
 
 			// Copy ELF to buffer
 			memcpy(newelf, entirefile + i, newsize);
@@ -93,7 +93,7 @@ int main(int argc, char * argv[], char **envp)
 				return 1;
 			}
 			else
-				printf("memfd Ok: %d\n", memfd);
+				printf("memfd is: %d\n", memfd);
 
 			// Write ELF to temporary memory file
 			write(memfd, newelf, newsize);

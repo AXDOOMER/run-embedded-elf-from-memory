@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Build the file to embed
-gcc -O2 hello.c -o hello
-strip hello
+gcc -O2 payload.c -o payload
+strip payload
 
-# Build the payload and embed 'hello'
-gcc main.c -o emb && cat hello >> emb && ./emb
+# Build the packer and embed the payload
+gcc packer.c -o emb && cat payload >> emb && ./emb
