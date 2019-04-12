@@ -44,7 +44,7 @@ int main(int argc, char* argv[], char** envp)
 	stat(argv[0], &st);
 	size_t size = st.st_size;
 
-	printf("My size is: %d\n", size);
+	printf("My size is: %u\n", size);
 
 	char procstring[32];
 	sprintf(procstring, "%s%d%s", "/proc/", pid, "/exe");
@@ -90,6 +90,7 @@ int main(int argc, char* argv[], char** envp)
 			if (memfd < 0)
 			{
 				printf("Invalid memfd %d.\n", i);
+				free(newelf);
 				return 1;
 			}
 			else
